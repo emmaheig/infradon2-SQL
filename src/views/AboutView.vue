@@ -173,6 +173,10 @@ export default defineComponent({
       }
     },
 
+      createTimestamp() {
+    return new Date().toISOString();
+  },
+
     async deletePost(post: Post) {
       if (!this.localDb || !post._id) return
 
@@ -191,6 +195,7 @@ export default defineComponent({
     },
 
     async updatePost(partialPost: Partial<Post>) {
+      console.log('updatePost')
       if (!this.localDb || !partialPost._id) return
 
       try {
@@ -209,6 +214,7 @@ export default defineComponent({
         }
 
         if (!this.validatePost(updatedPost)) return
+        console.log('updatePost on fait vraiment la mise a jour')
 
         await this.localDb.put(updatedPost)
         this.isEditing = false
@@ -403,134 +409,170 @@ export default defineComponent({
   </div>
 </template>
 <style scoped>
-/* Variables CSS */
-:root {
-  --primary-color: #4caf50; /* Vert pour les boutons */
-  --secondary-color: #363636; /* Texte secondaire sombre */
-  --background-color: #ffffff; /* Couleur de fond */
-  --text-color: #111; /* Texte principal très foncé */
-  --error-color: #f44336; /* Rouge pour les erreurs */
-  --border-radius: 8px; /* Coins arrondis */
-  --transition-speed: 0.3s; /* Vitesse des transitions */
-  --font-family: 'Arial', sans-serif; /* Police principale */
-  --max-width: 900px; /* Largeur maximale de la colonne */
-}
-
-/* Global */
+/* Global Styles */
 body {
-  font-family: var(--font-family);
-  background-color: var(--background-color);
-  color: #000000;
+  font-family: Arial, sans-serif;
+  background-color: #f4f7fa;
   margin: 0;
   padding: 0;
+  color: #333;
 }
 
-h1, h2, h3 {
-  margin: 0 0 1rem;
-  color:  #000000;
+h1,
+h2 {
+  font-size: 1.5rem;
+  color: #333;
+  margin-bottom: 1rem;
 }
 
-/* Container principal */
+/* Posts Manager Container */
 .posts-manager {
-  max-width: var(--max-width);
-  margin: 2rem auto;
-  padding: 1.5rem;
-  background: #fff;
-  border-radius: var(--border-radius);
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 2rem;
 }
 
-/* Section de formulaire */
+/* Error Alert */
+.error-alert {
+  background-color: #f8d7da;
+  color: #721c24;
+  padding: 1rem;
+  border: 1px solid #f5c6cb;
+  margin-bottom: 1rem;
+  position: relative;
+  width: 100%;
+  max-width: 600px;
+  border-radius: 4px;
+}
+
+.error-alert .close-button {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  background: transparent;
+  border: none;
+  font-size: 1.2rem;
+  cursor: pointer;
+}
+
+/* Loading Indicator */
+.loading-indicator {
+  font-size: 1.2rem;
+  color: #007bff;
+  margin-bottom: 1rem;
+}
+
+/* Form Section */
 .form-section {
-  margin-bottom: 2rem;
+  background-color: #ffffff;
+  padding: 2rem;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  max-width: 600px;
+}
+
+.form-section .section-title {
+  margin-bottom: 1rem;
+  font-size: 1.8rem;
+  text-align: center;
 }
 
 .form-group {
   margin-bottom: 1rem;
-  display: flex;
-  flex-direction: column;
 }
 
-.form-group input,
-.form-group textarea {
+.form-input,
+.form-textarea {
   width: 100%;
-  padding: 1rem; /* Augmentation pour un design plus confortable */
+  padding: 0.75rem;
   border: 1px solid #ccc;
-  border-radius: var(--border-radius);
+  border-radius: 4px;
+  box-sizing: border-box;
   font-size: 1rem;
 }
 
-.form-group input:focus,
-.form-group textarea:focus {
-  outline: none;
-  border-color: var(--primary-color);
+.form-textarea {
+  min-height: 150px;
+  resize: vertical;
 }
 
 .character-count {
   font-size: 0.875rem;
-  color: #302f2f;
-  margin-top: 0.25rem;
+  color: #666;
+  text-align: right;
 }
 
 .button-group {
   display: flex;
-  gap: 0.75rem;
+  justify-content: space-between;
+  gap: 1rem;
 }
 
-button {
-  padding: 1rem 1.5rem; /* Boutons plus grands */
-  font-size: 1.1rem; /* Texte légèrement agrandi */
-  color: #fff;
-  background-color: #4caf50;
+.submit-button,
+.cancel-button {
+  padding: 0.75rem 1.25rem;
+  font-size: 1rem;
   border: none;
-  border-radius: 30px;
+  border-radius: 4px;
   cursor: pointer;
-  transition: transform var(--transition-speed);
 }
 
-button:disabled {
-  background-color: hwb(146 0% 0%);
-  cursor: not-allowed;
+.submit-button {
+  background-color: #28a745;
+  color: white;
+}
+
+.submit-button:disabled {
+  background-color: #ddd;
 }
 
 .cancel-button {
-  background-color: var(--error-color);
+  background-color: #dc3545;
+  color: white;
 }
 
 .cancel-button:disabled {
-  background-color: #e57373;
+  background-color: #ddd;
 }
 
-/* Liste des posts */
+/* Posts Section */
 .posts-section {
-  margin-top: 2.5rem;
+  width: 100%;
+  max-width: 800px;
+  margin-top: 2rem;
 }
 
 .posts-scrollable {
-  display: flex;
-  flex-direction: column;
+  overflow-y: auto;
+  max-height: 500px;
+}
+
+.posts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   gap: 1.5rem;
 }
 
 .post-card {
-  padding: 1rem;
-  border: 1px solid #ddd;
-  border-radius: var(--border-radius);
-  background: #fdfdfd;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  background-color: #fff;
+  padding: 1.5rem;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  position: relative;
 }
 
 .post-card-header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
   margin-bottom: 1rem;
 }
 
 .post-title {
-  font-size: 1.25rem;
+  font-size: 1.2rem;
   font-weight: bold;
-  color:  #302f2f;
+  margin: 0;
 }
 
 .post-actions {
@@ -538,46 +580,68 @@ button:disabled {
   gap: 0.5rem;
 }
 
-.post-actions button {
-  padding: 0.5rem;
-  font-size: 1rem;
-  border-radius: var(--border-radius);
+.icon-button {
+  background: transparent;
+  border: none;
+  font-size: 1.2rem;
+  cursor: pointer;
 }
 
-/* Texte du post */
+.edit-button {
+  color: #007bff;
+}
+
+.delete-button {
+  color: #dc3545;
+}
+
 .post-content {
-  margin: 0.5rem 0;
-  color: var(--secondary-color);
+  font-size: 1rem;
+  color: #555;
+  margin-bottom: 1rem;
 }
 
 .post-meta {
+  font-size: 0.875rem;
+  color: #888;
   display: flex;
   justify-content: space-between;
-  font-size: 0.9rem;
-  color: #0e0d0d;
+}
+
+.post-date {
+  font-style: italic;
+}
+
+.post-modified {
+  font-style: italic;
+  color: #007bff;
+}
+
+/* No Posts Message */
+.no-posts {
+  text-align: center;
+  color: #888;
+  font-size: 1rem;
 }
 
 /* Pagination */
 .pagination {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
+  justify-content: center;
   margin-top: 2rem;
 }
 
 .pagination-button {
-  padding: 0.75rem 1.25rem;
+  padding: 0.5rem 1rem;
   font-size: 1rem;
-  background-color: var(--primary-color);
-  color: #fff;
+  background-color: #007bff;
+  color: white;
   border: none;
-  border-radius: var(--border-radius);
+  border-radius: 4px;
   cursor: pointer;
 }
 
 .pagination-button:disabled {
-  background-color: #ccc;
-  cursor: not-allowed;
+  background-color: #ddd;
 }
 </style>
-
